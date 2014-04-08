@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+	xmlns:activiti="http://activiti.org/bpmn"
+	targetNamespace="http://www.bpmnwithactiviti.org" 
+	xmlns:tns="http://www.bpmnwithactiviti.org"
+	xmlns:isbn="http://webservices.daehosting.com/ISBN">
+ 
+	<import importType="http://schemas.xmlsoap.org/wsdl/"
+		namespace="http://webservices.daehosting.com/ISBN" location="http://webservices.daehosting.com/services/isbnservice.wso?WSDL"/>
+ 
+ 
+	<process id="webserviceprocess">
+ 
+		<startEvent id="startevent" name="Start" />
+		<sequenceFlow sourceRef="startevent" targetRef="theScriptTask" />
+ 
+		<scriptTask id="theScriptTask" scriptFormat="groovy" name="Execute script">
+			<script>
+  			System.out.println("sISBNInput : "+sISBNInput);
+			</script>
+		</scriptTask>
+		<sequenceFlow sourceRef="theScriptTask" targetRef="webService" />
+ 
+		<serviceTask id="webService"
+			name="request web service"
+			implementation="##WebService"
+			operationRef="tns:IsValidISBN10Operation">
+ 
+<!--        Warning: The following code abuses the syntax of Data Associations        for a radical shortcut.      -->
+ 
+			<dataInputAssociation>
+				<sourceRef>sISBNInput</sourceRef>
+				<targetRef>sISBN</targetRef>
+			</dataInputAssociation>
+ 
+			<dataOutputAssociation>
+				<sourceRef>IsValidISBN10Result</sourceRef>
+				<targetRef>webserviceResponse</targetRef>
+			</dataOutputAssociation>
+		</serviceTask>
+		<sequenceFlow sourceRef="webService" targetRef="waitState" />
+		<receiveTask id="waitState" />
+		<sequenceFlow sourceRef="waitState" targetRef="endevent" />
+		<endEvent id="endevent" name="End" />
+	</process>
+ 
+	<itemDefinition id="sISBN" structureRef="string" />
+	<itemDefinition id="sISBNInput" structureRef="string" />
+	<itemDefinition id="IsValidISBN10Result" structureRef="boolean" />
+	<itemDefinition id="webserviceResponse" structureRef="boolean" />
+ 
+	<interface name="Web Service request" implementationRef="isbn:ISBNServiceSoapType">
+		<operation id="IsValidISBN10Operation" name="iban operation" implementationRef="isbn:IsValidISBN10">
+			<inMessageRef>IsValidISBN10SoapRequestMessage</inMessageRef>
+			<outMessageRef>IsValidISBN10SoapResponseMessage</outMessageRef>
+		</operation>
+	</interface>
+ 
+	<message id="IsValidISBN10SoapRequestMessage" itemRef="tns:IsValidISBN10SoapRequestItem"/>
+	<message id="IsValidISBN10SoapResponseMessage" itemRef="tns:IsValidISBN10SoapResponseItem"/>	
+ 
+ 
+	<itemDefinition id="IsValidISBN10SoapRequestItem" structureRef="isbn:IsValidISBN10"/>
+	<itemDefinition id="IsValidISBN10SoapResponseItem" structureRef="isbn:IsValidISBN10Response"/>
+ 
+</definitions>
